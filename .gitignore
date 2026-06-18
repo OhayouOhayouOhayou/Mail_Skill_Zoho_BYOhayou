@@ -3,6 +3,9 @@
 signature.html
 storage_alerts.log
 backups/
+build/
+dist/
+*.spec
 __pycache__/
 *.pyc
 *.pyo

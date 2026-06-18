@@ -42,6 +42,7 @@ MENU = """
 ║  8)  🌐 เปิด API ให้ ChatGPT (browser)        ║
 ║  9)  🩺 ตรวจสอบการเชื่อมต่อ / Doctor          ║
 ║  S)  ⏰ ตั้งเช็คพื้นที่อัตโนมัติ (กันเมลเต็ม)  ║
+║  N)  🔔 เปิดโปรแกรมแจ้งเตือนเมล (tray)        ║
 ║  0)  ออก / Exit                              ║
 ╚══════════════════════════════════════════════╝
 """
@@ -94,6 +95,10 @@ def main() -> int:
         elif choice.lower() == "s":
             run("install_scheduler.py")
             input("\n[Enter เพื่อกลับเมนู]")
+        elif choice.lower() == "n":
+            print("เปิดโปรแกรมแจ้งเตือน... ดูไอคอนที่ system tray (มุมขวาล่าง)")
+            print("ปิดได้โดยคลิกขวาที่ไอคอน → ออก")
+            run("notifier.py")
         elif choice in ("0", "q", "exit", "ออก"):
             print("บ๊ายบาย 👋")
             return 0

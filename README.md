@@ -251,6 +251,30 @@ crosses `STORAGE_WARN_PERCENT`, it alerts via webhook + a desktop popup + a log
 
 On macOS/Linux, add a cron line (the installer prints one for you).
 
+---
+
+## 🔔 Desktop tray notifier (real-time, clickable)
+
+A system-tray app that pops a Windows toast for every **incoming and outgoing**
+email in near real time. Click the toast to open Zoho Mail.
+
+```bash
+pip install -r requirements-desktop.txt
+python notifier.py          # or double-click notifier.bat (no console window)
+python notifier.py --test   # one poll + a test toast, prints to console
+```
+
+- Tray menu: **Open Zoho Mail · Check now · Quit**
+- Poll interval: `NOTIFY_POLL_SECONDS` in `.env` (default 30s)
+- Click target: `ZOHO_WEBMAIL_URL` (defaults to your region's webmail)
+
+**Start automatically at login:** press <kbd>Win</kbd>+<kbd>R</kbd>, type
+`shell:startup`, and drop a shortcut to `notifier.bat` in that folder.
+
+**Build a standalone .exe** (no Python needed to run): double-click
+`build_exe.bat` → produces `dist\ZohoMailNotifier.exe`. Keep your `.env` next
+to the exe.
+
 **Run in background (Windows):**
 ```powershell
 Start-Process python -ArgumentList "monitor.py" `
