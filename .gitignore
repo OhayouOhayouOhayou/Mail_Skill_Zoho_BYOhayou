@@ -1,6 +1,7 @@
 .env
 .token_cache.json
 signature.html
+storage_alerts.log
 backups/
 __pycache__/
 *.pyc

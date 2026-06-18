@@ -233,6 +233,24 @@ python monitor.py
 POLL_SECONDS=30 python monitor.py
 ```
 
+### 🛡️ Automatic storage monitoring (survives reboot)
+
+`monitor.py` only runs while its terminal is open. To guarantee you're warned
+**before the mailbox fills up** (and stops sending/receiving), install a
+scheduled check that runs even after you close the terminal or reboot:
+
+```bash
+python install_scheduler.py --hourly     # check every hour
+# or interactive:
+python install_scheduler.py
+```
+
+This registers a Windows Scheduled Task running `storage_alert.py`. When usage
+crosses `STORAGE_WARN_PERCENT`, it alerts via webhook + a desktop popup + a log
+(`storage_alerts.log`). Remove anytime with `python install_scheduler.py --remove`.
+
+On macOS/Linux, add a cron line (the installer prints one for you).
+
 **Run in background (Windows):**
 ```powershell
 Start-Process python -ArgumentList "monitor.py" `

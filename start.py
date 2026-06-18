@@ -41,6 +41,7 @@ MENU = """
 ║  7)  🔔 เฝ้าดูต่อเนื่อง / Monitor             ║
 ║  8)  🌐 เปิด API ให้ ChatGPT (browser)        ║
 ║  9)  🩺 ตรวจสอบการเชื่อมต่อ / Doctor          ║
+║  S)  ⏰ ตั้งเช็คพื้นที่อัตโนมัติ (กันเมลเต็ม)  ║
 ║  0)  ออก / Exit                              ║
 ╚══════════════════════════════════════════════╝
 """
@@ -89,6 +90,9 @@ def main() -> int:
             run("api_server.py")
         elif choice == "9":
             run("cli.py", "doctor")
+            input("\n[Enter เพื่อกลับเมนู]")
+        elif choice.lower() == "s":
+            run("install_scheduler.py")
             input("\n[Enter เพื่อกลับเมนู]")
         elif choice in ("0", "q", "exit", "ออก"):
             print("บ๊ายบาย 👋")
