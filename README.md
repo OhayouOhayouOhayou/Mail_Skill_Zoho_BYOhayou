@@ -30,7 +30,8 @@ python cli.py doctor   # verify it works
 python cli.py inbox    # see your latest mail
 ```
 
-> 📦 New here? Follow the full step-by-step **[INSTALL.md](INSTALL.md)** (Thai).
+> 📦 New here? On Windows just **double-click `install.bat`** (installs deps,
+> runs setup, verifies). Full guide: **[INSTALL.md](INSTALL.md)** (Thai).
 
 The **`setup.py` wizard** asks for your Zoho Client ID/Secret + an authorization
 code, then automatically exchanges it for a refresh token and detects your
