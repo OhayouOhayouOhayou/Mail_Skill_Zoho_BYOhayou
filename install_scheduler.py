@@ -18,6 +18,12 @@ import sys
 import subprocess
 from pathlib import Path
 
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 TASK_NAME = "ZohoMailStorageCheck"
 HERE = Path(__file__).parent.resolve()
 SCRIPT = HERE / "storage_alert.py"
