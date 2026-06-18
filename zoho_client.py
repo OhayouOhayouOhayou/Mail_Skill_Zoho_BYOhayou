@@ -109,10 +109,13 @@ def _headers() -> dict:
     return {"Authorization": f"Zoho-oauthtoken {_get_access_token()}"}
 
 
-def _request(method: str, path: str, **kwargs) -> dict:
-    """HTTP request with auto token refresh on 401 and backoff on 429/5xx."""
+def _request(method: str, path: str, raw: bool = False, **kwargs):
+    """HTTP request with auto token refresh on 401 and backoff on 429/5xx.
+
+    raw=True returns the response body as bytes (for downloading attachments).
+    """
     url = f"{BASE_URL}{path}"
-    kwargs.setdefault("timeout", 20)
+    kwargs.setdefault("timeout", 30 if raw else 20)
     last_exc: Exception | None = None
 
     for attempt in range(MAX_RETRIES):
@@ -142,6 +145,8 @@ def _request(method: str, path: str, **kwargs) -> dict:
 
         if resp.status_code >= 400:
             raise ZohoError(f"Zoho API error {resp.status_code}: {resp.text[:300]}")
+        if raw:
+            return resp.content
         return resp.json() if resp.content else {}
 
     raise ZohoError(f"Request failed after {MAX_RETRIES} attempts: {last_exc}")
@@ -273,6 +278,33 @@ def get_message(message_id: str, folder_id: str | None = None) -> dict:
     ).get("data", {})
 
 
+def get_attachments(message_id: str, folder_id: str) -> list[dict]:
+    """List attachments of a message: [{attachmentId, attachmentName, attachmentSize}]."""
+    acct = account_id()
+    data = _request(
+        "GET",
+        f"/accounts/{acct}/folders/{folder_id}/messages/{message_id}/attachmentinfo",
+    ).get("data", {})
+    return data.get("attachments", [])
+
+
+def download_attachment(message_id: str, folder_id: str, attachment_id: str) -> bytes:
+    """Download one attachment and return its raw bytes."""
+    acct = account_id()
+    return _request(
+        "GET",
+        f"/accounts/{acct}/folders/{folder_id}/messages/{message_id}/attachments/{attachment_id}",
+        raw=True,
+    )
+
+
+def _safe_filename(name: str) -> str:
+    """Strip characters that are illegal in Windows filenames."""
+    bad = '<>:"/\\|?*'
+    cleaned = "".join("_" if c in bad else c for c in (name or "")).strip()
+    return cleaned or "attachment"
+
+
 def search_messages(query: str, limit: int = 20, pool: int = 200) -> list[dict]:
     """Search by keyword in subject / from / to.
 
@@ -371,23 +403,48 @@ def get_storage_info() -> dict:
 
 # ── Backup ───────────────────────────────────────────────────────────────────
 
+def _save_attachments(message_id: str, folder_id: str, dest_dir: Path) -> list[dict]:
+    """Download a message's attachments to dest_dir/<messageId>/. Returns metadata."""
+    saved = []
+    atts = get_attachments(message_id, folder_id)
+    if not atts:
+        return saved
+    msg_dir = dest_dir / str(message_id)
+    msg_dir.mkdir(parents=True, exist_ok=True)
+    for a in atts:
+        name = _safe_filename(a.get("attachmentName"))
+        try:
+            blob = download_attachment(message_id, folder_id, str(a.get("attachmentId")))
+            (msg_dir / name).write_bytes(blob)
+            saved.append({"name": a.get("attachmentName"),
+                          "size": a.get("attachmentSize"),
+                          "file": str(msg_dir / name)})
+        except Exception:
+            saved.append({"name": a.get("attachmentName"), "error": "download failed"})
+        time.sleep(0.15)
+    return saved
+
+
 def backup_folder(folder: str = "Inbox", max_messages: int = 500,
-                  progress=None) -> dict:
-    """Download messages to a JSONL file. Returns a summary dict.
+                  progress=None, with_attachments: bool = True) -> dict:
+    """Download messages to a JSONL file (+ attachment files). Returns a summary.
 
     progress: optional callable(done, total) for progress reporting.
+    with_attachments: also download attachment files into <backup>_files/<messageId>/.
     """
     out_dir = Path(os.getenv("BACKUP_DIR", "./backups"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     out_file = out_dir / f"backup_{folder.lower()}_{stamp}.jsonl"
+    att_dir = out_dir / f"backup_{folder.lower()}_{stamp}_files"
 
     batch = 50
     offset = 1
     processed = 0       # advance by attempts (not just successes) to guarantee termination
     saved = 0
     failed = 0
+    attachments_saved = 0
 
     with open(out_file, "w", encoding="utf-8") as fh:
         while processed < max_messages:
@@ -397,11 +454,17 @@ def backup_folder(folder: str = "Inbox", max_messages: int = 500,
                 break
             for m in msgs:
                 try:
-                    detail = get_message(str(m["messageId"]), folder_id=str(m.get("folderId")))
+                    mid = str(m["messageId"])
+                    fid = str(m.get("folderId"))
+                    detail = get_message(mid, folder_id=fid)
                     record = {**{k: m.get(k) for k in
                                  ("messageId", "subject", "fromAddress",
                                   "toAddress", "sentDateInGMT", "hasAttachment", "folderId")},
                               **detail}
+                    if with_attachments and str(m.get("hasAttachment")) in ("1", "true", "True"):
+                        files = _save_attachments(mid, fid, att_dir)
+                        record["attachments"] = files
+                        attachments_saved += sum(1 for f in files if "file" in f)
                     fh.write(json.dumps(record, ensure_ascii=False) + "\n")
                     saved += 1
                 except Exception:
@@ -419,6 +482,8 @@ def backup_folder(folder: str = "Inbox", max_messages: int = 500,
         "folder": folder,
         "saved": saved,
         "failed": failed,
+        "attachments_saved": attachments_saved,
         "backup_file": str(out_file),
+        "attachments_dir": str(att_dir) if attachments_saved else None,
         "size_kb": round(out_file.stat().st_size / 1024, 1) if out_file.exists() else 0,
     }

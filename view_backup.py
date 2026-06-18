@@ -7,6 +7,7 @@ Turn a .jsonl backup into a readable HTML page you can open in any browser.
 Creates an .html next to the .jsonl and opens it in your browser.
 """
 
+import os
 import sys
 import json
 import glob
@@ -52,11 +53,27 @@ def build(jsonl_path: Path) -> Path:
         body = m.get("content") or "(ไม่มีเนื้อหา)"
         # sandbox the email HTML inside an iframe so its styles don't leak
         srcdoc = html.escape(body, quote=True)
+
+        att_html = ""
+        atts = m.get("attachments") or []
+        if atts:
+            links = []
+            for a in atts:
+                nm = html.escape(a.get("name") or "ไฟล์แนบ")
+                if a.get("file"):
+                    rel = os.path.relpath(a["file"], jsonl_path.parent).replace("\\", "/")
+                    kb = round((a.get("size") or 0) / 1024, 1)
+                    links.append(f'<a href="{html.escape(rel)}" download>📎 {nm} ({kb} KB)</a>')
+                else:
+                    links.append(f'<span style="color:#d93025">📎 {nm} (โหลดไม่สำเร็จ)</span>')
+            att_html = '<div class="att">ไฟล์แนบ: ' + " &nbsp; ".join(links) + "</div>"
+
         rows.append(f"""
         <details>
           <summary><span class="subj">{clip} {subj}</span>
             <span class="meta">{frm} · {date}</span></summary>
           <div class="hdr"><b>From:</b> {frm}<br><b>To:</b> {to}<br><b>Date:</b> {date}</div>
+          {att_html}
           <iframe sandbox srcdoc="{srcdoc}" loading="lazy"></iframe>
         </details>""")
 
@@ -74,6 +91,8 @@ def build(jsonl_path: Path) -> Path:
   .subj {{ font-weight: 600; }}
   .meta {{ color: #5f6368; font-size: 12px; white-space: nowrap; }}
   .hdr {{ font-size: 12px; color: #5f6368; margin: 10px 0; border-top: 1px solid #eee; padding-top: 8px; }}
+  .att {{ font-size: 13px; margin: 6px 0 10px; }}
+  .att a {{ color: #1a73e8; text-decoration: none; margin-right: 6px; }}
   iframe {{ width: 100%; height: 480px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; }}
 </style></head><body>
   <h1>📬 Email Backup</h1>
