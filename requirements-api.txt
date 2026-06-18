@@ -1,0 +1,4 @@
+# For the ChatGPT Custom GPT integration (api_server.py)
+# Core deps are in requirements.txt
+fastapi>=0.110.0
+uvicorn>=0.29.0

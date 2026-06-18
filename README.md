@@ -152,7 +152,22 @@ Backup กล่อง Inbox 500 ฉบับ
 
 ---
 
-## 💬 ChatGPT / OpenAI Codex Setup
+## 🌐 ChatGPT on the browser (Custom GPT)
+
+Want to chat with your mailbox from **chatgpt.com**? Run the included HTTP API
+and connect it as a Custom GPT Action:
+
+```bash
+pip install -r requirements-api.txt
+python api_server.py          # local API on :8000
+```
+
+Then expose it with a tunnel and import the schema into a Custom GPT.
+**Full step-by-step guide: [CHATGPT.md](CHATGPT.md)**
+
+---
+
+## 💬 ChatGPT / OpenAI Codex Setup (your own script)
 
 ```python
 import os, json, openai
@@ -244,7 +259,11 @@ Mail_Skill_Zoho_BYOhayou/
 ├── openai_tools.json     # ChatGPT / Codex tool definitions
 ├── openai_dispatcher.py  # ChatGPT function call handler
 ├── monitor.py            # Standalone continuous monitor
+├── api_server.py         # HTTP API for ChatGPT Custom GPT (FastAPI)
+├── setup.py              # Interactive OAuth wizard
+├── cli.py                # Command-line interface
 ├── zoho-mail.skill       # Claude Code skill descriptor
+├── CHATGPT.md            # ChatGPT browser (Custom GPT) setup guide
 └── GUIDE.md              # Full guide in Thai + English
 ```
 
