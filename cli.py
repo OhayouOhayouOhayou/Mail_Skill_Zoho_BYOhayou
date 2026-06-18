@@ -10,6 +10,7 @@ Usage:
     python cli.py storage                 Show storage usage
     python cli.py folders                 List folders + unread counts
     python cli.py backup [folder] [N]     Backup folder (default Inbox, 500)
+    python cli.py viewbackup [file]       Open a .jsonl backup as readable HTML
     python cli.py send <to> <subject> <body>   Send email (+ signature)
     python cli.py watch [seconds]         Continuous monitor (default 60s)
 """
@@ -132,6 +133,12 @@ def cmd_backup(args):
     print(f"  → {result['backup_file']}")
 
 
+def cmd_viewbackup(args):
+    import view_backup
+    sys.argv = ["view_backup"] + list(args)
+    return view_backup.main()
+
+
 def cmd_send(args):
     if len(args) < 3:
         print('Usage: python cli.py send <to> <subject> "<body>"')
@@ -167,6 +174,7 @@ COMMANDS = {
     "storage": cmd_storage,
     "folders": cmd_folders,
     "backup": cmd_backup,
+    "viewbackup": cmd_viewbackup,
     "send": cmd_send,
     "watch": cmd_watch,
 }
