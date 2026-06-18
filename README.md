@@ -59,8 +59,11 @@ python cli.py watch 60            # continuous monitor every 60s
 3. Copy your **Client ID** and **Client Secret**
 4. Click tab **"Generate Code"**, enter scope:
    ```
-   ZohoMail.messages.ALL,ZohoMail.accounts.READ
+   ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ
    ```
+   > Minimal scope `ZohoMail.messages.ALL,ZohoMail.accounts.READ` already gives
+   > inbox / storage / backup. Adding `ZohoMail.folders.READ` enables per-folder
+   > filtering and the `folders` command.
 5. Click **Create** → copy the **Authorization Code** (expires in 10 min)
 6. Run this to get your **Refresh Token**:
 

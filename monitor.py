@@ -7,11 +7,18 @@ Alerts are printed to stdout. Set NOTIFY_WEBHOOK in .env to also push alerts
 to Slack / Discord / Telegram / any webhook (JSON {"text": "..."} payload).
 """
 
+import sys
 import time
 import os
 from datetime import datetime
 
 import httpx
+
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 try:
     from dotenv import load_dotenv

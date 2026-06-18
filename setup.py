@@ -12,6 +12,12 @@ from pathlib import Path
 
 import httpx
 
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 REGIONS = {
     "1": ("com", "US / Global  (mail.zoho.com)"),
     "2": ("eu", "Europe       (mail.zoho.eu)"),
@@ -69,7 +75,7 @@ def get_auth_code() -> str:
     print(
         "In the Self Client page:\n"
         "1. Click the 'Generate Code' tab\n"
-        "2. Scope:  ZohoMail.messages.ALL,ZohoMail.accounts.READ\n"
+        "2. Scope:  ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ\n"
         "3. Duration: 10 minutes  →  any description  →  CREATE\n"
         "4. Copy the generated code and paste it here.\n"
     )
@@ -129,7 +135,17 @@ def detect_email(region: str, refresh_token: str, cid: str, secret: str) -> str:
         timeout=20,
     ).json().get("data", [])
 
-    emails = [a.get("emailAddress") for a in accounts if a.get("emailAddress")]
+    def _email(a: dict) -> str:
+        for key in ("primaryEmailAddress", "mailboxAddress"):
+            if a.get(key):
+                return str(a[key])
+        ea = a.get("emailAddress")
+        if isinstance(ea, list) and ea:
+            primary = next((e for e in ea if e.get("isPrimary")), ea[0])
+            return str(primary.get("mailId", ""))
+        return str(ea or "")
+
+    emails = [e for e in (_email(a) for a in accounts) if e]
     if not emails:
         return ask("Account email")
     if len(emails) == 1:

@@ -69,11 +69,13 @@
 ### 3.2 สร้าง Refresh Token
 
 1. ในหน้า Self Client ที่สร้างไว้ คลิกแท็บ **"Generate Code"**
-2. กรอก Scope ดังนี้:
+2. กรอก Scope ดังนี้ (แนะนำให้ครบทั้ง 3):
    ```
-   ZohoMail.messages.READ,ZohoMail.accounts.READ
+   ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ
    ```
-   > หากต้องการ Backup (ดาวน์โหลด) ให้เพิ่ม: `ZohoMail.messages.ALL`
+   > - `messages.ALL` = อ่าน + backup เมล
+   > - `accounts.READ` = ดูข้อมูลบัญชี + พื้นที่
+   > - `folders.READ` = กรองตามโฟลเดอร์ + คำสั่ง `folders` (ถ้าไม่ใส่ inbox/storage/backup ยังทำงานได้)
 3. เลือก **Time Duration**: 10 minutes
 4. กรอก **Scope Description**: ใส่อะไรก็ได้ เช่น "Mail Monitor"
 5. คลิก **"CREATE"** → จะได้ **Authorization Code** (ใช้ได้ 10 นาที)

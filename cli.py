@@ -15,6 +15,13 @@ Usage:
 
 import sys
 
+# make Unicode (checkmarks, emoji, Thai) safe on Windows cp1252 consoles
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -48,7 +55,11 @@ def cmd_doctor(args=None) -> int:
         print(f"  ✓ Storage: {info['used_pct']}% used "
               f"({info['used_mb']} / {info['total_mb']} MB)")
         folders = zc.get_folders()
-        print(f"  ✓ Folders: {', '.join(f.get('folderName','?') for f in folders[:8])}")
+        if folders:
+            print(f"  ✓ Folders: {', '.join(f.get('folderName','?') for f in folders[:8])}")
+        else:
+            print("  • Folders: not accessible (optional 'ZohoMail.folders.READ' scope "
+                  "not granted — inbox still works across all folders)")
         print("\nAll good! 🎉")
         return 0
     except Exception as e:
@@ -94,8 +105,15 @@ def cmd_storage(args):
 
 
 def cmd_folders(args):
-    for f in zc.get_folders():
-        print(f"  {f.get('folderName'):20} id={f.get('folderId'):12} "
+    folders = zc.get_folders()
+    if not folders:
+        print("No folder list available.")
+        print("→ This needs the 'ZohoMail.folders.READ' scope. Re-run `python setup.py`")
+        print("  with scope: ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ")
+        print("  (Inbox / storage / backup work fine without it.)")
+        return
+    for f in folders:
+        print(f"  {str(f.get('folderName')):20} id={str(f.get('folderId')):20} "
               f"unread={f.get('unreadCount', 0)}")
 
 
