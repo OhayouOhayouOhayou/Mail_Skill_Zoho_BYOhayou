@@ -85,7 +85,7 @@
     "type": "function",
     "function": {
       "name": "backup_emails",
-      "description": "Backup emails from a Zoho Mail folder to a local JSONL file. Returns the path to the backup file.",
+      "description": "Backup emails from a Zoho Mail folder to a local JSONL file. Returns a summary with saved count and file path.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -101,6 +101,14 @@
           }
         }
       }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_folders",
+      "description": "List all Zoho Mail folders with their IDs and unread counts.",
+      "parameters": { "type": "object", "properties": {} }
     }
   }
 ]

@@ -14,20 +14,45 @@ Monitor inbox/outbox, check storage, and backup emails — works with **Claude C
 | `search_email` | ค้นหาเมล / Search by keyword or sender |
 | `check_storage` | ตรวจพื้นที่ / Check quota & warn if near full |
 | `backup_emails` | สำรองเมล / Export emails to local JSONL file |
+| `list_folders` | ดูโฟลเดอร์ทั้งหมด / List folders + unread counts |
 
 ---
 
-## ⚡ Quick Start
-
-### 1 — Clone & Install
+## ⚡ Quick Start (3 commands)
 
 ```bash
 git clone https://github.com/OhayouOhayouOhayou/Mail_Skill_Zoho_BYOhayou.git
 cd Mail_Skill_Zoho_BYOhayou
 pip install -r requirements.txt
+
+python setup.py        # interactive wizard → writes .env for you
+python cli.py doctor   # verify it works
+python cli.py inbox    # see your latest mail
 ```
 
-### 2 — Get Zoho OAuth2 Credentials
+The **`setup.py` wizard** asks for your Zoho Client ID/Secret + an authorization
+code, then automatically exchanges it for a refresh token and detects your
+account email — no manual `curl` needed.
+
+### 🖥️ CLI commands
+
+```bash
+python cli.py doctor              # check config & connection
+python cli.py inbox [N]           # list N recent inbox emails
+python cli.py sent [N]            # list N recent sent emails
+python cli.py read <messageId>    # read full email
+python cli.py search <query> [N]  # search emails
+python cli.py storage             # storage usage bar
+python cli.py folders             # list folders + unread
+python cli.py backup Inbox 200    # backup 200 emails from Inbox
+python cli.py watch 60            # continuous monitor every 60s
+```
+
+---
+
+## 🔧 Manual setup (alternative to the wizard)
+
+### Get Zoho OAuth2 Credentials
 
 1. Go to **https://api-console.zoho.com/**
 2. **ADD CLIENT** → choose **Self Client** → Create

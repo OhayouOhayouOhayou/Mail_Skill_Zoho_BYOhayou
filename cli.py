@@ -1,0 +1,158 @@
+"""
+Zoho Mail Skill - command line interface.
+
+Usage:
+    python cli.py doctor                  Check config & connection
+    python cli.py inbox [N]               List N recent inbox emails (default 10)
+    python cli.py sent [N]                List N recent sent emails
+    python cli.py read <messageId>        Read full email content
+    python cli.py search <query> [N]      Search emails
+    python cli.py storage                 Show storage usage
+    python cli.py folders                 List folders + unread counts
+    python cli.py backup [folder] [N]     Backup folder (default Inbox, 500)
+    python cli.py watch [seconds]         Continuous monitor (default 60s)
+"""
+
+import sys
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+import zoho_client as zc
+
+
+def _print_messages(msgs: list[dict]) -> None:
+    if not msgs:
+        print("(no messages)")
+        return
+    for m in msgs:
+        date = (m.get("sentDateInGMT") or "")[:16]
+        frm = (m.get("fromAddress") or "")[:32]
+        subj = m.get("subject") or "(no subject)"
+        flag = "📎" if str(m.get("hasAttachment")) in ("1", "true", "True") else "  "
+        print(f"{flag} {date:16} | {frm:32} | {subj}")
+        print(f"   id: {m.get('messageId')}")
+
+
+def cmd_doctor(args=None) -> int:
+    print("Checking configuration...")
+    try:
+        accounts = zc.get_accounts()
+        print(f"  ✓ Authentication OK ({len(accounts)} account(s) reachable)")
+        acct = zc.account_id()
+        print(f"  ✓ Account resolved: id={acct}")
+        info = zc.get_storage_info()
+        print(f"  ✓ Storage: {info['used_pct']}% used "
+              f"({info['used_mb']} / {info['total_mb']} MB)")
+        folders = zc.get_folders()
+        print(f"  ✓ Folders: {', '.join(f.get('folderName','?') for f in folders[:8])}")
+        print("\nAll good! 🎉")
+        return 0
+    except Exception as e:
+        print(f"\n✗ {e}")
+        return 1
+
+
+def cmd_inbox(args):
+    n = int(args[0]) if args else 10
+    _print_messages(zc.list_messages("Inbox", limit=n))
+
+
+def cmd_sent(args):
+    n = int(args[0]) if args else 10
+    _print_messages(zc.list_sent(limit=n))
+
+
+def cmd_read(args):
+    if not args:
+        print("Usage: python cli.py read <messageId>"); return 1
+    data = zc.get_message(args[0])
+    content = data.get("content") or data.get("summary") or "(empty)"
+    print(content)
+
+
+def cmd_search(args):
+    if not args:
+        print("Usage: python cli.py search <query> [N]"); return 1
+    n = int(args[1]) if len(args) > 1 else 20
+    _print_messages(zc.search_messages(args[0], limit=n))
+
+
+def cmd_storage(args):
+    info = zc.get_storage_info()
+    bar_len = 30
+    filled = int(info["used_pct"] / 100 * bar_len)
+    bar = "█" * filled + "░" * (bar_len - filled)
+    status = "⚠️  WARNING — near full!" if info["is_warning"] else "✓ OK"
+    print(f"[{bar}] {info['used_pct']}%")
+    print(f"Used : {info['used_mb']} MB")
+    print(f"Total: {info['total_mb']} MB")
+    print(f"Warn at {info['warn_threshold']}%  →  {status}")
+
+
+def cmd_folders(args):
+    for f in zc.get_folders():
+        print(f"  {f.get('folderName'):20} id={f.get('folderId'):12} "
+              f"unread={f.get('unreadCount', 0)}")
+
+
+def cmd_backup(args):
+    folder = args[0] if args else "Inbox"
+    n = int(args[1]) if len(args) > 1 else 500
+    print(f"Backing up '{folder}' (up to {n} messages)...")
+
+    def progress(done, total):
+        print(f"\r  {done}/{total}", end="", flush=True)
+
+    result = zc.backup_folder(folder, n, progress=progress)
+    print(f"\n✓ Saved {result['saved']} messages "
+          f"({result['failed']} failed, {result['size_kb']} KB)")
+    print(f"  → {result['backup_file']}")
+
+
+def cmd_watch(args):
+    import monitor
+    if args:
+        monitor.POLL_SECONDS = int(args[0])
+    monitor.run()
+
+
+COMMANDS = {
+    "doctor": cmd_doctor,
+    "inbox": cmd_inbox,
+    "sent": cmd_sent,
+    "read": cmd_read,
+    "search": cmd_search,
+    "storage": cmd_storage,
+    "folders": cmd_folders,
+    "backup": cmd_backup,
+    "watch": cmd_watch,
+}
+
+
+def main() -> int:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print(__doc__)
+        return 0
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+    fn = COMMANDS.get(cmd)
+    if not fn:
+        print(f"Unknown command: {cmd}\n")
+        print(__doc__)
+        return 1
+    try:
+        return fn(args) or 0
+    except zc.ZohoError as e:
+        print(f"\n✗ {e}")
+        return 1
+    except Exception as e:
+        print(f"\n✗ Unexpected error: {e}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

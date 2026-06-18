@@ -61,8 +61,13 @@ def _run(name: str, args: dict) -> dict:
         return {**info, "status": "WARNING — near full!" if info["is_warning"] else "OK"}
 
     if name == "backup_emails":
-        path = zc.backup_folder(args.get("folder", "Inbox"), args.get("max_messages", 500))
-        return {"success": True, "backup_file": path}
+        return zc.backup_folder(args.get("folder", "Inbox"), args.get("max_messages", 500))
+
+    if name == "list_folders":
+        return {"folders": [
+            {"name": f.get("folderName"), "id": f.get("folderId"), "unread": f.get("unreadCount")}
+            for f in zc.get_folders()
+        ]}
 
     return {"error": f"Unknown function: {name}"}
 

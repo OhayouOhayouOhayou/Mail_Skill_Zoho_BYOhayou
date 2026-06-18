@@ -70,6 +70,11 @@ async def list_tools() -> list[Tool]:
             inputSchema={"type": "object", "properties": {}},
         ),
         Tool(
+            name="list_folders",
+            description="List all mail folders with their IDs and unread counts.",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        Tool(
             name="backup_emails",
             description="Backup emails from a specified folder to a local JSONL file.",
             inputSchema={
@@ -124,11 +129,17 @@ def _dispatch(name: str, args: dict):
         return {**info, "status": status}
 
     if name == "backup_emails":
-        path = zc.backup_folder(
+        return zc.backup_folder(
             folder=args.get("folder", "Inbox"),
             max_messages=args.get("max_messages", 500),
         )
-        return {"success": True, "backup_file": path}
+
+    if name == "list_folders":
+        return {"folders": [
+            {"name": f.get("folderName"), "id": f.get("folderId"),
+             "unread": f.get("unreadCount")}
+            for f in zc.get_folders()
+        ]}
 
     return {"error": f"Unknown tool: {name}"}
 
