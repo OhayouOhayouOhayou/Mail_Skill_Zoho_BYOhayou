@@ -1,0 +1,106 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "check_inbox",
+      "description": "List recent incoming emails from Zoho Mail inbox. Use this to monitor new mail.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Number of emails to return (max 50). Default 20.",
+            "default": 20
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Pagination offset. Default 0.",
+            "default": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "check_sent",
+      "description": "List recent outgoing (sent) emails from Zoho Mail.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "integer", "default": 20 },
+          "offset": { "type": "integer", "default": 0 }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_email",
+      "description": "Read the full content of a specific email.",
+      "parameters": {
+        "type": "object",
+        "required": ["message_id"],
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "description": "The messageId value from check_inbox or check_sent"
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_email",
+      "description": "Search Zoho Mail emails by keyword, sender, or subject.",
+      "parameters": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search keyword or phrase"
+          },
+          "limit": { "type": "integer", "default": 20 }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "check_storage",
+      "description": "Check Zoho Mail storage usage: used MB, total MB, percentage used, and warning status.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "backup_emails",
+      "description": "Backup emails from a Zoho Mail folder to a local JSONL file. Returns the path to the backup file.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string",
+            "description": "Folder to backup: Inbox, Sent, Trash, etc. Default: Inbox",
+            "default": "Inbox"
+          },
+          "max_messages": {
+            "type": "integer",
+            "description": "Maximum number of messages to download. Default: 500",
+            "default": 500
+          }
+        }
+      }
+    }
+  }
+]

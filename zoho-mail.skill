@@ -1,0 +1,134 @@
+---
+name: zoho-mail
+description: Monitor Zoho Mail inbox/sent, check storage quota, and backup emails. Works with Claude Code (MCP) and ChatGPT/Codex (function calling).
+metadata:
+  type: tool-skill
+  version: 1.0.0
+  author: Claude Code
+  platforms:
+    - claude-code
+    - chatgpt
+    - openai-codex
+  requires:
+    - python>=3.11
+    - zoho_client.py
+    - mcp_server.py (Claude)
+    - openai_dispatcher.py (ChatGPT)
+---
+
+# Zoho Mail Skill
+
+## What this skill does
+
+| Feature | Description |
+|---|---|
+| `check_inbox` | รายการเมลเข้าล่าสุด (inbox) |
+| `check_sent` | รายการเมลออกล่าสุด (sent) |
+| `read_email` | อ่านเนื้อหาเมลเต็ม |
+| `search_email` | ค้นหาเมลด้วย keyword |
+| `check_storage` | ตรวจสอบพื้นที่ใช้งาน / แจ้งเตือนเมื่อใกล้เต็ม |
+| `backup_emails` | สำรองข้อมูลเมลเป็นไฟล์ JSONL |
+
+## Setup (one-time)
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Create .env from template
+cp .env.example .env
+# Fill in ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN, ZOHO_ACCOUNT_EMAIL
+
+# 3. Get OAuth2 credentials from https://api-console.zoho.com/
+#    - Create a "Self Client"
+#    - Scope: ZohoMail.messages.READ, ZohoMail.accounts.READ
+#    - Generate refresh token via Authorization Code flow
+```
+
+## Claude Code setup
+
+Add to `.claude/settings.json`:
+```json
+{
+  "mcpServers": {
+    "zoho-mail": {
+      "command": "python",
+      "args": ["D:/zoho-mail/mcp_server.py"],
+      "env": {
+        "ZOHO_CLIENT_ID": "...",
+        "ZOHO_CLIENT_SECRET": "...",
+        "ZOHO_REFRESH_TOKEN": "...",
+        "ZOHO_ACCOUNT_EMAIL": "you@domain.com"
+      }
+    }
+  }
+}
+```
+
+## ChatGPT / OpenAI Codex setup
+
+```python
+import openai, json
+from openai_dispatcher import dispatch
+
+tools = json.load(open("openai_tools.json"))
+
+messages = [{"role": "user", "content": "Check my inbox"}]
+while True:
+    resp = openai.chat.completions.create(
+        model="gpt-4o", messages=messages,
+        tools=tools, tool_choice="auto",
+    )
+    msg = resp.choices[0].message
+    if not msg.tool_calls:
+        print(msg.content); break
+    messages.append(msg)
+    for tc in msg.tool_calls:
+        result = dispatch(tc.function.name, json.loads(tc.function.arguments))
+        messages.append({
+            "role": "tool", "tool_call_id": tc.id,
+            "content": json.dumps(result, ensure_ascii=False),
+        })
+```
+
+## Continuous monitoring
+
+```bash
+# Poll inbox + storage every 60 seconds (default)
+python monitor.py
+
+# Custom interval (seconds)
+POLL_SECONDS=30 python monitor.py
+```
+
+## Backup
+
+```bash
+# Via Python
+python -c "import zoho_client as z; print(z.backup_folder('Inbox', 1000))"
+
+# Or ask Claude / ChatGPT:
+# "Backup my inbox, up to 200 messages"
+```
+
+## Example prompts (Claude or ChatGPT)
+
+- "ตรวจสอบเมลเข้าใหม่ 10 ฉบับล่าสุด"
+- "พื้นที่อีเมลใช้ไปแล้วเท่าไร ใกล้เต็มไหม"
+- "ค้นหาเมลจาก noreply@github.com"
+- "Backup กล่อง Inbox ไว้ก่อนเลย 500 ฉบับ"
+- "Show me sent emails from this week"
+
+## File layout
+
+```
+zoho-mail/
+├── .env.example          # Environment variable template
+├── requirements.txt      # Python dependencies
+├── zoho_client.py        # Zoho API client (shared core)
+├── mcp_server.py         # Claude Code MCP server
+├── openai_tools.json     # ChatGPT/Codex tool definitions
+├── openai_dispatcher.py  # ChatGPT function call dispatcher
+├── monitor.py            # Standalone continuous monitor
+└── zoho-mail.skill       # This skill file
+```
