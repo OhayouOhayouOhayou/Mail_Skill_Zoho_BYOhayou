@@ -10,7 +10,10 @@ import httpx
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # load the .env next to this file so MCP servers launched from any
+    # working directory (Claude, Codex) still find the config
+    load_dotenv(Path(__file__).with_name(".env"))
+    load_dotenv()  # also honor a .env in the current directory, if any
 except ImportError:
     pass  # env vars may be supplied directly (e.g. Claude settings.json)
 

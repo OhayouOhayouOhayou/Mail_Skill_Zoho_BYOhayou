@@ -167,6 +167,14 @@ Then expose it with a tunnel and import the schema into a Custom GPT.
 
 ---
 
+## 🤖 OpenAI Codex
+
+Use it from the Codex CLI agent — either let Codex run `python cli.py ...`
+directly, or register `mcp_server.py` as an MCP server in `~/.codex/config.toml`.
+**Guide: [CODEX.md](CODEX.md)** (an `AGENTS.md` is included so Codex understands the repo).
+
+---
+
 ## 💬 ChatGPT / OpenAI Codex Setup (your own script)
 
 ```python
@@ -263,7 +271,9 @@ Mail_Skill_Zoho_BYOhayou/
 ├── setup.py              # Interactive OAuth wizard
 ├── cli.py                # Command-line interface
 ├── zoho-mail.skill       # Claude Code skill descriptor
+├── AGENTS.md             # Guidance for coding agents (Codex)
 ├── CHATGPT.md            # ChatGPT browser (Custom GPT) setup guide
+├── CODEX.md              # OpenAI Codex setup guide
 └── GUIDE.md              # Full guide in Thai + English
 ```
 
