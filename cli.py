@@ -10,6 +10,7 @@ Usage:
     python cli.py storage                 Show storage usage
     python cli.py folders                 List folders + unread counts
     python cli.py backup [folder] [N]     Backup folder (default Inbox, 500)
+    python cli.py send <to> <subject> <body>   Send email (+ signature)
     python cli.py watch [seconds]         Continuous monitor (default 60s)
 """
 
@@ -131,6 +132,25 @@ def cmd_backup(args):
     print(f"  → {result['backup_file']}")
 
 
+def cmd_send(args):
+    if len(args) < 3:
+        print('Usage: python cli.py send <to> <subject> "<body>"')
+        return 1
+    to, subject = args[0], args[1]
+    body = " ".join(args[2:])
+    sig = zc.load_signature()
+    print(f"From   : {zc.from_address()}")
+    print(f"To     : {to}")
+    print(f"Subject: {subject}")
+    print(f"Body   : {body[:80]}{'...' if len(body) > 80 else ''}")
+    print(f"Signature: {'yes' if sig else 'none (no signature.html / SIGNATURE)'}")
+    if input("\nSend this email? (y/n) > ").strip().lower() != "y":
+        print("Cancelled.")
+        return 0
+    result = zc.send_email(to, subject, body)
+    print(f"✓ Sent to {to}" if result.get("success") else f"✗ {result}")
+
+
 def cmd_watch(args):
     import monitor
     if args:
@@ -147,6 +167,7 @@ COMMANDS = {
     "storage": cmd_storage,
     "folders": cmd_folders,
     "backup": cmd_backup,
+    "send": cmd_send,
     "watch": cmd_watch,
 }
 

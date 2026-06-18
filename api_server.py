@@ -114,6 +114,25 @@ def backup_emails(req: BackupRequest, authorization: str = Header(None)):
     return zc.backup_folder(req.folder, min(req.max_messages, 300))
 
 
+class SendRequest(BaseModel):
+    to: str
+    subject: str
+    body: str
+    cc: str | None = None
+    bcc: str | None = None
+    html: bool = True
+    signature: bool = True
+
+
+@app.post("/send", operation_id="send_email", summary="Send an email with signature")
+def send_email(req: SendRequest, authorization: str = Header(None)):
+    auth(authorization)
+    return zc.send_email(
+        to=req.to, subject=req.subject, body=req.body,
+        cc=req.cc, bcc=req.bcc, html=req.html, signature=req.signature,
+    )
+
+
 # ── OpenAPI with public server URL (for Custom GPT import) ────────────────────
 
 def custom_openapi():

@@ -287,6 +287,63 @@ def search_messages(query: str, limit: int = 20, pool: int = 200) -> list[dict]:
     return matches[:limit]
 
 
+# ── Sending ──────────────────────────────────────────────────────────────────
+
+def from_address() -> str:
+    """The primary email address to send mail from."""
+    wanted = (os.getenv("ZOHO_ACCOUNT_EMAIL") or "").strip()
+    if wanted and "@" in wanted:
+        return wanted
+    accounts = get_accounts()
+    return account_email(accounts[0]) if accounts else ""
+
+
+def load_signature() -> str:
+    """Signature from signature.html (preferred) or the SIGNATURE env var."""
+    sig_file = Path(__file__).parent / "signature.html"
+    if sig_file.exists():
+        return sig_file.read_text(encoding="utf-8").strip()
+    return os.getenv("SIGNATURE", "").strip()
+
+
+def send_email(to: str, subject: str, body: str,
+               cc: str | None = None, bcc: str | None = None,
+               html: bool = True, signature: bool = True) -> dict:
+    """Send an email via Zoho Mail, optionally appending your signature.
+
+    Requires the ZohoMail.messages.ALL (or .CREATE) scope.
+    `to`, `cc`, `bcc` may be comma-separated lists of addresses.
+    """
+    acct = account_id()
+    content = body
+    if signature:
+        sig = load_signature()
+        if sig:
+            content += ("<br><br>" if html else "\n\n") + sig
+
+    payload = {
+        "fromAddress": from_address(),
+        "toAddress": to,
+        "subject": subject,
+        "content": content,
+        "mailFormat": "html" if html else "plaintext",
+    }
+    if cc:
+        payload["ccAddress"] = cc
+    if bcc:
+        payload["bccAddress"] = bcc
+
+    resp = _request("POST", f"/accounts/{acct}/messages", json=payload)
+    return {
+        "success": True,
+        "from": payload["fromAddress"],
+        "to": to,
+        "subject": subject,
+        "signature_attached": bool(signature and load_signature()),
+        "response": resp.get("data", resp),
+    }
+
+
 # ── Storage ──────────────────────────────────────────────────────────────────
 
 def get_storage_info() -> dict:

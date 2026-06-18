@@ -69,6 +69,13 @@ def _run(name: str, args: dict) -> dict:
             for f in zc.get_folders()
         ]}
 
+    if name == "send_email":
+        return zc.send_email(
+            to=args["to"], subject=args["subject"], body=args["body"],
+            cc=args.get("cc"), bcc=args.get("bcc"),
+            html=args.get("html", True), signature=args.get("signature", True),
+        )
+
     return {"error": f"Unknown function: {name}"}
 
 

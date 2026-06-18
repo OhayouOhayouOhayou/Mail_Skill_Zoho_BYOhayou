@@ -1,5 +1,6 @@
 .env
 .token_cache.json
+signature.html
 backups/
 __pycache__/
 *.pyc

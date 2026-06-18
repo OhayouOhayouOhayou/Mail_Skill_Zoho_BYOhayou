@@ -1,0 +1,8 @@
+<!-- Copy this file to signature.html and edit with your details. -->
+<!-- It is appended to every email you send (when signature=on). -->
+<div style="font-family: Arial, sans-serif; font-size: 13px; color: #333;">
+  <strong>Your Name</strong><br>
+  Position · Company Co., Ltd.<br>
+  📞 +66 0 0000 0000 &nbsp;|&nbsp; ✉️ you@yourdomain.com<br>
+  🌐 www.yourcompany.com
+</div>

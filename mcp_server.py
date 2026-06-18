@@ -75,6 +75,23 @@ async def list_tools() -> list[Tool]:
             inputSchema={"type": "object", "properties": {}},
         ),
         Tool(
+            name="send_email",
+            description="Send an email from the user's Zoho Mail account. The signature is appended automatically unless disabled.",
+            inputSchema={
+                "type": "object",
+                "required": ["to", "subject", "body"],
+                "properties": {
+                    "to": {"type": "string", "description": "Recipient address(es), comma-separated"},
+                    "subject": {"type": "string"},
+                    "body": {"type": "string", "description": "Email body (HTML allowed)"},
+                    "cc": {"type": "string"},
+                    "bcc": {"type": "string"},
+                    "html": {"type": "boolean", "default": True},
+                    "signature": {"type": "boolean", "default": True},
+                },
+            },
+        ),
+        Tool(
             name="backup_emails",
             description="Backup emails from a specified folder to a local JSONL file.",
             inputSchema={
@@ -140,6 +157,13 @@ def _dispatch(name: str, args: dict):
              "unread": f.get("unreadCount")}
             for f in zc.get_folders()
         ]}
+
+    if name == "send_email":
+        return zc.send_email(
+            to=args["to"], subject=args["subject"], body=args["body"],
+            cc=args.get("cc"), bcc=args.get("bcc"),
+            html=args.get("html", True), signature=args.get("signature", True),
+        )
 
     return {"error": f"Unknown tool: {name}"}
 

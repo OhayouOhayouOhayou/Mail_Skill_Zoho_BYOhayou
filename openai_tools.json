@@ -110,5 +110,25 @@
       "description": "List all Zoho Mail folders with their IDs and unread counts.",
       "parameters": { "type": "object", "properties": {} }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "send_email",
+      "description": "Send an email from the user's Zoho Mail account. Your signature is appended automatically unless signature is set to false.",
+      "parameters": {
+        "type": "object",
+        "required": ["to", "subject", "body"],
+        "properties": {
+          "to": { "type": "string", "description": "Recipient address(es), comma-separated" },
+          "subject": { "type": "string", "description": "Email subject" },
+          "body": { "type": "string", "description": "Email body (HTML allowed)" },
+          "cc": { "type": "string", "description": "CC address(es), comma-separated" },
+          "bcc": { "type": "string", "description": "BCC address(es), comma-separated" },
+          "html": { "type": "boolean", "description": "Send as HTML (default true)", "default": true },
+          "signature": { "type": "boolean", "description": "Append your signature (default true)", "default": true }
+        }
+      }
+    }
   }
 ]
