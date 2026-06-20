@@ -9,7 +9,7 @@ Usage:
     python cli.py search <query> [N]      Search emails
     python cli.py storage                 Show storage usage
     python cli.py folders                 List folders + unread counts
-    python cli.py backup [folder] [N]     Backup folder (default Inbox, 500)
+    python cli.py backup [folder] [N] [fmt]   Backup (fmt: html|eml|both)
     python cli.py viewbackup [file]       Open a .jsonl backup as readable HTML
     python cli.py send <to> <subject> <body>   Send email (+ signature)
     python cli.py watch [seconds]         Continuous monitor (default 60s)
@@ -122,15 +122,19 @@ def cmd_folders(args):
 def cmd_backup(args):
     folder = args[0] if args else "Inbox"
     n = int(args[1]) if len(args) > 1 else 500
-    print(f"Backing up '{folder}' (up to {n} messages)...")
+    fmt = args[2] if len(args) > 2 else "html"   # html | eml | both
+    print(f"Backing up '{folder}' (up to {n} messages, format={fmt})...")
 
     def progress(done, total):
         print(f"\r  {done}/{total}", end="", flush=True)
 
-    result = zc.backup_folder(folder, n, progress=progress)
+    result = zc.backup_folder(folder, n, progress=progress, fmt=fmt)
     print(f"\n✓ Saved {result['saved']} messages "
-          f"({result['failed']} failed, {result['size_kb']} KB)")
-    print(f"  → {result['backup_file']}")
+          f"({result['failed']} failed, {result['attachments_saved']} attachments)")
+    if result.get("backup_file"):
+        print(f"  HTML data → {result['backup_file']}")
+    if result.get("eml_dir"):
+        print(f"  .eml      → {result['eml_dir']}")
 
 
 def cmd_viewbackup(args):

@@ -425,28 +425,70 @@ def _save_attachments(message_id: str, folder_id: str, dest_dir: Path) -> list[d
     return saved
 
 
-def backup_folder(folder: str = "Inbox", max_messages: int = 500,
-                  progress=None, with_attachments: bool = True) -> dict:
-    """Download messages to a JSONL file (+ attachment files). Returns a summary.
+def build_eml(record: dict, blobs: list[tuple]) -> bytes:
+    """Construct a standard .eml (RFC 822) from a message record + attachment blobs.
 
-    progress: optional callable(done, total) for progress reporting.
-    with_attachments: also download attachment files into <backup>_files/<messageId>/.
+    blobs: list of (filename, data_bytes). Opens in Outlook/Thunderbird and
+    imports back into Zoho.
+    """
+    import mimetypes
+    from email.message import EmailMessage
+    from email.utils import formatdate
+
+    msg = EmailMessage()
+    msg["From"] = record.get("fromAddress", "") or ""
+    msg["To"] = record.get("toAddress", "") or ""
+    msg["Subject"] = record.get("subject", "") or ""
+    try:
+        msg["Date"] = formatdate(int(record.get("sentDateInGMT")) / 1000, localtime=False)
+    except Exception:
+        pass
+
+    content = record.get("content") or ""
+    msg.set_content("(เนื้อหาเป็น HTML — เปิดด้วยโปรแกรมอีเมล)")
+    msg.add_alternative(content, subtype="html")
+
+    for name, data in blobs:
+        ctype, _ = mimetypes.guess_type(name)
+        maintype, _, subtype = (ctype or "application/octet-stream").partition("/")
+        try:
+            msg.add_attachment(data, maintype=maintype, subtype=subtype or "octet-stream",
+                               filename=name)
+        except Exception:
+            pass
+    return msg.as_bytes()
+
+
+def backup_folder(folder: str = "Inbox", max_messages: int = 500,
+                  progress=None, fmt: str = "html") -> dict:
+    """Download messages. Returns a summary dict.
+
+    fmt:
+      "html" — JSONL data + attachment files (view with view_backup.py)
+      "eml"  — one .eml file per message (with attachments embedded)
+      "both" — both of the above
     """
     out_dir = Path(os.getenv("BACKUP_DIR", "./backups"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    do_html = fmt in ("html", "both")
+    do_eml = fmt in ("eml", "both")
+
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_file = out_dir / f"backup_{folder.lower()}_{stamp}.jsonl"
-    att_dir = out_dir / f"backup_{folder.lower()}_{stamp}_files"
+    base = f"backup_{folder.lower()}_{stamp}"
+    out_file = out_dir / f"{base}.jsonl"
+    att_dir = out_dir / f"{base}_files"
+    eml_dir = out_dir / f"{base}_eml"
 
     batch = 50
     offset = 1
-    processed = 0       # advance by attempts (not just successes) to guarantee termination
+    processed = 0       # advance by attempts (not successes) to guarantee termination
     saved = 0
     failed = 0
     attachments_saved = 0
 
-    with open(out_file, "w", encoding="utf-8") as fh:
+    fh = open(out_file, "w", encoding="utf-8") if do_html else None
+    try:
         while processed < max_messages:
             want = min(batch, max_messages - processed)
             msgs = list_messages(folder=folder, limit=want, offset=offset)
@@ -461,11 +503,36 @@ def backup_folder(folder: str = "Inbox", max_messages: int = 500,
                                  ("messageId", "subject", "fromAddress",
                                   "toAddress", "sentDateInGMT", "hasAttachment", "folderId")},
                               **detail}
-                    if with_attachments and str(m.get("hasAttachment")) in ("1", "true", "True"):
-                        files = _save_attachments(mid, fid, att_dir)
-                        record["attachments"] = files
-                        attachments_saved += sum(1 for f in files if "file" in f)
-                    fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+                    # download attachment bytes once (used by both formats)
+                    blobs: list[tuple] = []
+                    if str(m.get("hasAttachment")) in ("1", "true", "True"):
+                        for a in get_attachments(mid, fid):
+                            try:
+                                data = download_attachment(mid, fid, str(a.get("attachmentId")))
+                                blobs.append((_safe_filename(a.get("attachmentName")), data))
+                            except Exception:
+                                pass
+                            time.sleep(0.1)
+
+                    if do_html:
+                        if blobs:
+                            msg_dir = att_dir / mid
+                            msg_dir.mkdir(parents=True, exist_ok=True)
+                            files = []
+                            for name, data in blobs:
+                                (msg_dir / name).write_bytes(data)
+                                files.append({"name": name, "size": len(data),
+                                              "file": str(msg_dir / name)})
+                            record["attachments"] = files
+                            attachments_saved += len(files)
+                        fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+                    if do_eml:
+                        eml_dir.mkdir(parents=True, exist_ok=True)
+                        subj = _safe_filename((record.get("subject") or "")[:50]) or "email"
+                        (eml_dir / f"{subj}_{mid}.eml").write_bytes(build_eml(record, blobs))
+
                     saved += 1
                 except Exception:
                     failed += 1
@@ -476,14 +543,19 @@ def backup_folder(folder: str = "Inbox", max_messages: int = 500,
             offset += len(msgs)
             if len(msgs) < want:
                 break
+    finally:
+        if fh:
+            fh.close()
 
     return {
         "success": True,
         "folder": folder,
+        "format": fmt,
         "saved": saved,
         "failed": failed,
         "attachments_saved": attachments_saved,
-        "backup_file": str(out_file),
+        "backup_file": str(out_file) if do_html else None,
         "attachments_dir": str(att_dir) if attachments_saved else None,
-        "size_kb": round(out_file.stat().st_size / 1024, 1) if out_file.exists() else 0,
+        "eml_dir": str(eml_dir) if do_eml else None,
+        "size_kb": round(out_file.stat().st_size / 1024, 1) if do_html and out_file.exists() else 0,
     }

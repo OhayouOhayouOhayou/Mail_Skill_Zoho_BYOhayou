@@ -32,6 +32,7 @@ MENU = """
 ╔══════════════════════════════════════════════╗
 ║          📬  ZOHO MAIL SKILL  📬             ║
 ╠══════════════════════════════════════════════╣
+║  A)  🪟 เปิดแอป (หน้าต่าง UI) ← แนะนำ          ║
 ║  1)  ตั้งค่าครั้งแรก / Setup (OAuth wizard)    ║
 ║  2)  💬 คุยกับ AI / Chat with AI              ║
 ║  3)  📥 เช็คเมลเข้า / Check inbox             ║
@@ -56,7 +57,9 @@ def main() -> int:
 
         choice = input("เลือกหมายเลข > ").strip()
 
-        if choice == "1":
+        if choice.lower() == "a":
+            run("app.py")
+        elif choice == "1":
             run("setup.py")
         elif choice == "2":
             run("chat.py")

@@ -33,6 +33,18 @@ python cli.py inbox    # see your latest mail
 > 📦 New here? On Windows just **double-click `install.bat`** (installs deps,
 > runs setup, verifies). Full guide: **[INSTALL.md](INSTALL.md)** (Thai).
 
+### 🪟 Desktop app (UI)
+
+A windowed app with a sidebar — **Dashboard · Realtime monitor · Backup · Settings**
+(edit Client ID/Secret, poll interval, storage threshold right in the UI):
+
+```bash
+python app.py        # or double-click app.bat
+```
+
+Backups support two formats: **HTML + attachment files** (readable) and **.eml**
+(re-openable in Zoho / Outlook / Thunderbird) — or both at once.
+
 The **`setup.py` wizard** asks for your Zoho Client ID/Secret + an authorization
 code, then automatically exchanges it for a refresh token and detects your
 account email — no manual `curl` needed.

@@ -27,7 +27,8 @@
 | `search_email` | ค้นหาเมล (หัวข้อ/ผู้ส่ง/ผู้รับ) |
 | `check_storage` | เช็คพื้นที่ + เตือนเมื่อใกล้เต็ม |
 | `list_folders` | ดูโฟลเดอร์ + จำนวนยังไม่อ่าน |
-| `backup_emails` | สำรองเมลเป็น JSONL + **โหลดไฟล์แนบมาเก็บด้วย** |
+| `backup_emails` | สำรองเมล + ไฟล์แนบ — 2 รูปแบบ: **HTML** (อ่านง่าย) และ **.eml** (เปิดบน Zoho/Outlook) |
+| **Desktop App** (`app.py`) | หน้าต่าง UI: Dashboard / Realtime / Backup / Settings (แก้ Client ID ในแอปได้) |
 | `send_email` | ส่งเมล + แนบ Signature อัตโนมัติ |
 
 ### 2.2 ทำงานเบื้องหลัง / แจ้งเตือน
