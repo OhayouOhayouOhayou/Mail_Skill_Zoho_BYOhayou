@@ -22,7 +22,10 @@ echo.
 echo [2/2] กำลังสร้าง .exe (ใช้เวลาสักครู่)...
 REM Windowed (ไม่มีหน้าต่างดำ) + รวมไฟล์โปรเจกต์ที่จำเป็นไว้ในตัว exe
 pyinstaller --noconfirm --onefile --windowed --name ZohoMailSetup ^
+  --icon "assets\icon.ico" ^
   --collect-submodules httpx ^
+  --add-data "assets;assets" ^
+  --add-data "branding.py;." ^
   --add-data "cli.py;." ^
   --add-data "zoho_client.py;." ^
   --add-data "openai_tools.json;." ^

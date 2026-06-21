@@ -1,53 +1,54 @@
-; Inno Setup script — builds a real "Setup.exe" (like installing Word).
+; Inno Setup script — builds a branded "ASEFA-Mail-Setup.exe" (installs like Word).
 ; Requires the free Inno Setup compiler: https://jrsoftware.org/isdl.php
 ;
-; Before compiling this, build the two .exe files first:
-;     build_installer.bat   ->  dist\ZohoMailSetup.exe   (config wizard)
-;     build_exe.bat         ->  dist\ZohoMailNotifier.exe (tray notifier)
+; Build the app .exe FIRST:
+;     build_app.bat        ->  dist\ASEFAMail.exe   (main app: dashboard/realtime/backup/settings)
+;     build_exe.bat        ->  dist\ZohoMailNotifier.exe  (optional tray notifier)
 ;
-; Then open this file in Inno Setup and click Compile. Output:
-;     Output\ZohoMail-Setup.exe   <- send THIS single file to users.
+; Then open this file in Inno Setup -> Compile. Output:
+;     Output\ASEFA-Mail-Setup.exe   <- distribute THIS single file to staff.
 
-#define AppName "Zoho Mail Skill"
+#define AppName "ASEFA Mail"
 #define AppVer  "1.0.0"
-#define Pub     "OhayouOhayou"
+#define Pub     "ASEFA Public Company Limited"
+#define ExeName "ASEFAMail.exe"
 
 [Setup]
 AppName={#AppName}
 AppVersion={#AppVer}
 AppPublisher={#Pub}
-DefaultDirName={autopf}\ZohoMail
+AppPublisherURL=https://www.asefa.co.th/
+DefaultDirName={autopf}\ASEFA Mail
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=ZohoMail-Setup
+OutputBaseFilename=ASEFA-Mail-Setup
 OutputDir=Output
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-; per-user install: no admin prompt
 PrivilegesRequired=lowest
+SetupIconFile=assets\icon.ico
+UninstallDisplayIcon={app}\{#ExeName}
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "สร้างไอคอนบนเดสก์ท็อป"; GroupDescription: "Shortcuts:"
-Name: "startupnotifier"; Description: "เปิดตัวแจ้งเตือนเมลอัตโนมัติเมื่อเข้าเครื่อง"; GroupDescription: "Options:"; Flags: unchecked
+Name: "startupapp"; Description: "เปิด ASEFA Mail อัตโนมัติเมื่อเข้าเครื่อง"; GroupDescription: "Options:"; Flags: unchecked
 
 [Files]
-Source: "dist\ZohoMailSetup.exe";    DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\ASEFAMail.exe";        DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\ZohoMailNotifier.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "README.md";   DestDir: "{app}"; Flags: ignoreversion
-Source: "GUIDE.md";    DestDir: "{app}"; Flags: ignoreversion
-Source: "INSTALL.md";  DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\icon.ico";           DestDir: "{app}\assets"; Flags: ignoreversion
+Source: "INSTALL.md";                DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "DEPLOY.md";                 DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
-Name: "{group}\ตั้งค่า Zoho Mail";  Filename: "{app}\ZohoMailSetup.exe"
-Name: "{group}\แจ้งเตือนเมล";        Filename: "{app}\ZohoMailNotifier.exe"
-Name: "{autodesktop}\Zoho Mail ตั้งค่า"; Filename: "{app}\ZohoMailSetup.exe"; Tasks: desktopicon
-; auto-start the notifier at login (optional task)
-Name: "{userstartup}\Zoho Mail Notifier"; Filename: "{app}\ZohoMailNotifier.exe"; Tasks: startupnotifier
+Name: "{group}\{#AppName}";            Filename: "{app}\{#ExeName}"
+Name: "{group}\แจ้งเตือนเมล (Tray)";  Filename: "{app}\ZohoMailNotifier.exe"; Check: FileExists(ExpandConstant('{app}\ZohoMailNotifier.exe'))
+Name: "{autodesktop}\{#AppName}";     Filename: "{app}\{#ExeName}"; Tasks: desktopicon
+Name: "{userstartup}\{#AppName}";     Filename: "{app}\{#ExeName}"; Tasks: startupapp
 
 [Run]
-; launch the config wizard right after install
-Filename: "{app}\ZohoMailSetup.exe"; Description: "ตั้งค่าเชื่อมต่อ Zoho ตอนนี้"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\{#ExeName}"; Description: "เปิด ASEFA Mail ตอนนี้"; Flags: postinstall nowait skipifsilent

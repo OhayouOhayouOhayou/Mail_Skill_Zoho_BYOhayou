@@ -25,6 +25,7 @@ except ImportError:
     pass
 
 import zoho_client as zc
+import branding
 
 try:
     import notifier  # for show_toast()
@@ -138,10 +139,11 @@ class Monitor:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Zoho Mail Skill")
+        self.title(f"{branding.APP_NAME} — Zoho Mail")
         self.geometry("860x580")
         self.minsize(780, 520)
         self.configure(bg=BG)
+        branding.set_window_icon(self)
 
         style = ttk.Style(self)
         style.theme_use("clam")
@@ -162,7 +164,7 @@ class App(tk.Tk):
         self.content = tk.Frame(self, bg=BG)
         self.content.pack(side="left", fill="both", expand=True)
 
-        tk.Label(self.sidebar, text="📬  Zoho Mail", bg=SIDE, fg="white",
+        tk.Label(self.sidebar, text=f"📬  {branding.APP_NAME}", bg=SIDE, fg="white",
                  font=("Segoe UI", 14, "bold")).pack(pady=(20, 24), padx=16, anchor="w")
 
         self.nav_buttons = {}

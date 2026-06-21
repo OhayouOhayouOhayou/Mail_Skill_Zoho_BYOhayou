@@ -127,9 +127,15 @@ def _poll_loop() -> None:
 
 def _make_icon():
     from PIL import Image, ImageDraw
+    # prefer the org logo if available
+    try:
+        import branding
+        if branding.ICON_PNG.exists():
+            return Image.open(branding.ICON_PNG)
+    except Exception:
+        pass
     img = Image.new("RGB", (64, 64), "#1a73e8")
     d = ImageDraw.Draw(img)
-    # simple envelope glyph
     d.rectangle([12, 20, 52, 46], fill="white")
     d.line([12, 20, 32, 36], fill="#1a73e8", width=3)
     d.line([52, 20, 32, 36], fill="#1a73e8", width=3)

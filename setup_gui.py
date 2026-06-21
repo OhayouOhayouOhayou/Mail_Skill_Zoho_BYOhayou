@@ -21,6 +21,11 @@ from tkinter import ttk, messagebox
 
 import httpx
 
+try:
+    import branding
+except Exception:
+    branding = None
+
 ENV_PATH = Path(__file__).with_name(".env")
 SCOPE = "ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ"
 
@@ -38,10 +43,12 @@ ACCENT = "#1a73e8"
 class Wizard(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Zoho Mail Skill — ตัวช่วยติดตั้ง")
+        self.title("ASEFA Mail — ตัวช่วยติดตั้ง")
         self.geometry("560x440")
         self.resizable(False, False)
         self.configure(bg="white")
+        if branding:
+            branding.set_window_icon(self)
 
         # collected values
         self.region = tk.StringVar(value="com")
