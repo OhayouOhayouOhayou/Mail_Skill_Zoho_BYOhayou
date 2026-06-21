@@ -31,7 +31,7 @@ try:
 except Exception:
     notifier = None
 
-ENV_PATH = Path(__file__).with_name(".env")
+ENV_PATH = branding.env_file()
 REGIONS = [("com", "US / Global"), ("eu", "Europe"), ("in", "India"),
            ("com.au", "Australia"), ("jp", "Japan")]
 
@@ -383,7 +383,7 @@ class App(tk.Tk):
         threading.Thread(target=work, daemon=True).start()
 
     def _open_backup_dir(self):
-        d = Path(os.getenv("BACKUP_DIR", "./backups")).resolve()
+        d = Path(os.getenv("BACKUP_DIR") or (branding.data_dir() / "backups")).resolve()
         d.mkdir(parents=True, exist_ok=True)
         try:
             os.startfile(d)  # type: ignore

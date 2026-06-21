@@ -9,11 +9,19 @@ from pathlib import Path
 import httpx
 
 try:
+    import branding
+    _DATA_DIR = branding.data_dir()
+except Exception:
+    branding = None
+    _DATA_DIR = Path(__file__).parent
+
+try:
     from dotenv import load_dotenv
-    # load the .env next to this file so MCP servers launched from any
-    # working directory (Claude, Codex) still find the config
+    # load .env from the user-writable data dir (survives in the .exe build),
+    # the module dir, and the current dir — first found wins per key
+    load_dotenv(_DATA_DIR / ".env")
     load_dotenv(Path(__file__).with_name(".env"))
-    load_dotenv()  # also honor a .env in the current directory, if any
+    load_dotenv()
 except ImportError:
     pass  # env vars may be supplied directly (e.g. Claude settings.json)
 
@@ -22,7 +30,7 @@ BASE_URL = f"https://mail.zoho.{REGION}/api"
 ACCOUNTS_URL = f"https://accounts.zoho.{REGION}/oauth/v2/token"
 
 MAX_RETRIES = 4
-TOKEN_CACHE_FILE = Path(__file__).parent / ".token_cache.json"
+TOKEN_CACHE_FILE = _DATA_DIR / ".token_cache.json"
 
 _token_cache: dict = {"access_token": None, "expires_at": 0}
 _account_id_cache: str | None = None
@@ -489,7 +497,7 @@ def backup_folder(folder: str = "Inbox", max_messages: int = 500,
       "eml"  — one .eml file per message (with attachments embedded)
       "both" — both of the above
     """
-    out_dir = Path(os.getenv("BACKUP_DIR", "./backups"))
+    out_dir = Path(os.getenv("BACKUP_DIR") or (_DATA_DIR / "backups"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
     do_html = fmt in ("html", "both")
