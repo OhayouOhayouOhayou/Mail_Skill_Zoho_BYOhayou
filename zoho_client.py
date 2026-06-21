@@ -105,6 +105,27 @@ def _get_access_token(force: bool = False) -> str:
     return _token_cache["access_token"]
 
 
+def exchange_auth_code(region: str, client_id: str, client_secret: str, code: str) -> str:
+    """Exchange a Self-Client authorization code for a long-lived refresh token."""
+    url = f"https://accounts.zoho.{region}/oauth/v2/token"
+    data = {
+        "grant_type": "authorization_code",
+        "client_id": client_id.strip(),
+        "client_secret": client_secret.strip(),
+        "code": code.strip(),
+    }
+    body = httpx.post(url, data=data, timeout=20).json()
+    if "refresh_token" not in body and "redirect" in str(body).lower():
+        data["redirect_uri"] = "https://www.zoho.com/books/api/v3"
+        body = httpx.post(url, data=data, timeout=20).json()
+    if "refresh_token" not in body:
+        raise ZohoError(
+            f"แลก code ไม่สำเร็จ: {body.get('error', body)}.\n"
+            "→ code อาจหมดอายุ (10 นาที) ให้สร้างใหม่ หรือเช็ค Client ID/Secret/Region"
+        )
+    return body["refresh_token"]
+
+
 def _headers() -> dict:
     return {"Authorization": f"Zoho-oauthtoken {_get_access_token()}"}
 

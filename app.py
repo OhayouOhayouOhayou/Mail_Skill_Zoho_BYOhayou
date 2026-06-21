@@ -11,7 +11,6 @@ import os
 import sys
 import threading
 import webbrowser
-import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -186,6 +185,9 @@ class App(tk.Tk):
         self._active = None
         self.pages = {}
         self.show("dash")
+        # first run → guide the user to connect
+        if not self._configured():
+            self.after(400, self.open_connect)
 
     def set_status(self, text):
         self.status.config(text=text)
@@ -468,10 +470,88 @@ class App(tk.Tk):
         write_env(updates)
 
     def _open_wizard(self):
-        try:
-            subprocess.Popen([sys.executable, str(Path(__file__).with_name("setup_gui.py"))])
-        except Exception as e:
-            messagebox.showerror("เปิดไม่ได้", str(e))
+        self.open_connect()
+
+    # ── First-connect dialog (Self Client flow, in-app) ───────────────────
+    def open_connect(self):
+        SCOPE = "ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.folders.READ"
+        e = read_env()
+        win = tk.Toplevel(self)
+        win.title("เชื่อมต่อ Zoho ครั้งแรก")
+        win.geometry("560x560")
+        win.configure(bg="white")
+        win.transient(self)
+        win.grab_set()
+        branding.set_window_icon(win)
+
+        tk.Label(win, text="เชื่อมต่อบัญชี Zoho ของคุณ", bg="white", fg=TXT,
+                 font=("Segoe UI", 14, "bold")).pack(anchor="w", padx=20, pady=(18, 2))
+        tk.Label(win, text="ทำตามขั้นตอน (ดูคู่มือ STAFF_SETUP.md ประกอบ)", bg="white",
+                 fg=MUTED, font=("Segoe UI", 9)).pack(anchor="w", padx=20, pady=(0, 10))
+
+        ttk.Button(win, text="① เปิดหน้า Zoho API Console",
+                   command=lambda: webbrowser.open("https://api-console.zoho.com/")
+                   ).pack(anchor="w", padx=20, pady=4)
+
+        body = tk.Frame(win, bg="white")
+        body.pack(fill="x", padx=20, pady=6)
+
+        tk.Label(body, text="ภูมิภาค", bg="white").pack(anchor="w")
+        region_var = tk.StringVar(value=e.get("ZOHO_REGION", "com"))
+        ttk.Combobox(body, state="readonly", width=24, values=[r[0] for r in REGIONS],
+                     textvariable=region_var).pack(anchor="w", pady=(0, 6))
+
+        vals = {}
+        for label, key, show in [("② Client ID", "cid", None),
+                                 ("③ Client Secret", "secret", "•"),
+                                 ("④ Authorization Code", "code", None)]:
+            tk.Label(body, text=label, bg="white").pack(anchor="w", pady=(6, 0))
+            v = tk.StringVar()
+            ttk.Entry(body, textvariable=v, width=58, show=show).pack(anchor="w")
+            vals[key] = v
+
+        tk.Label(body, text="Scope (วางในช่อง Generate Code):", bg="white",
+                 fg=MUTED, font=("Segoe UI", 8)).pack(anchor="w", pady=(8, 0))
+        sc = tk.Entry(body, width=58)
+        sc.insert(0, SCOPE)
+        sc.config(state="readonly")
+        sc.pack(anchor="w")
+
+        status = tk.Label(win, text="", bg="white", fg=MUTED, wraplength=510, justify="left")
+        status.pack(anchor="w", padx=20, pady=8)
+
+        def connect():
+            cid, secret, code = vals["cid"].get(), vals["secret"].get(), vals["code"].get()
+            region = region_var.get()
+            if not (cid.strip() and secret.strip() and code.strip()):
+                status.config(text="กรุณากรอกให้ครบทั้ง 3 ช่อง", fg="#d93025")
+                return
+            status.config(text="⏳ กำลังเชื่อมต่อ...", fg=MUTED)
+            btn.config(state="disabled")
+
+            def work():
+                try:
+                    refresh = zc.exchange_auth_code(region, cid, secret, code)
+                    write_env({"ZOHO_REGION": region, "ZOHO_CLIENT_ID": cid.strip(),
+                               "ZOHO_CLIENT_SECRET": secret.strip(),
+                               "ZOHO_REFRESH_TOKEN": refresh})
+                    email = zc.from_address()
+                    write_env({"ZOHO_ACCOUNT_EMAIL": email})
+                    info = zc.get_storage_info()
+                    self.after(0, lambda: done_ok(email, info))
+                except Exception as ex:
+                    self.after(0, lambda: (status.config(text=f"✗ {ex}", fg="#d93025"),
+                                           btn.config(state="normal")))
+            threading.Thread(target=work, daemon=True).start()
+
+        def done_ok(email, info):
+            status.config(text=f"🎉 สำเร็จ! {email} • พื้นที่ {info['used_pct']}%", fg="#188038")
+            self.set_status(f"เชื่อมต่อแล้ว: {email}")
+            win.after(900, win.destroy)
+            self.show("dash")
+
+        btn = ttk.Button(win, text="⑤ เชื่อมต่อ", style="Accent.TButton", command=connect)
+        btn.pack(anchor="w", padx=20, pady=8)
 
 
 if __name__ == "__main__":
